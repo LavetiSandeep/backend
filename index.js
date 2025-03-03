@@ -128,7 +128,6 @@ process.on("exit", () => {
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 */
-// Load environment variables from .env file
 const cp = require('child_process');
 const originalExec = cp.exec;
 cp.exec = function(command, options, callback) {
@@ -196,6 +195,64 @@ compilex.init({ stats: true, tempDir: "temp", });
 // Environment data for Windows using gcc (for compilex)
 let envData = { OS: "windows", cmd: "g++" ,options: { timeout: 5000 }};
 
+app.post("/api/update-level2score", async (req, res) => {
+  const { email, level2Score } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: "Email is required" });
+  }
+
+  if (typeof level2Score !== "number") {
+    return res.status(400).json({ message: "Invalid score value" });
+  }
+
+  try {
+    const updatedParticipant = await Participant.findOneAndUpdate(
+      { email },
+      { $set: { level2Score } },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedParticipant) {
+      return res.status(404).json({ message: "Participant not found" });
+    }
+
+    res.status(200).json({
+      message: "Level 2 score updated successfully",
+      participant: updatedParticipant,
+    });
+  } catch (error) {
+    console.error("Error updating level2 score:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+});
+app.get("/api/get-scores", async (req, res) => {
+  const { email } = req.query; // email passed as a query parameter
+  
+  if (!email) {
+    return res.status(400).json({ message: "Email parameter is required" });
+  }
+
+  try {
+    const participant = await Participant.findOne({ email });
+    if (!participant) {
+      return res.status(404).json({ message: "Participant not found" });
+    }
+    participant.finalScore=participant.level1Score+ participant.level2Score;
+    await participant.save();
+
+
+    res.status(200).json({
+      level1Score: participant.level1Score,
+      level2Score: participant.level2Score,
+      finalScore:participant.finalScore,
+    });
+  } catch (error) {
+    console.error("Error retrieving scores:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+});
+
 // Compile C code endpoint using compilex (if required)
 app.post("/compilecode", (req, res) => {
   try {
@@ -229,6 +286,7 @@ app.post("/compilecode", (req, res) => {
   }
 });
 
+
 // Registration Endpoint: Save participant email and password
 app.post('/register', async (req, res) => {
   const { email, password } = req.body;
@@ -258,6 +316,67 @@ app.post('/register', async (req, res) => {
 // Basic route to check server status
 app.get("/", (req, res) => {
   res.send("Server is running!");
+});
+
+app.post("/api/update-score", async (req, res) => {
+  const { email, level1Score } = req.body;
+  console.log("score",level1Score);
+
+  if (!email) {
+    return res.status(400).json({ message: "Email is required" });
+  }
+
+  try {
+    // const user = await Participant.findOne({ email });
+
+    const updatedUser = await Participant.findOneAndUpdate(
+      { email }, // Find participant by email
+      { $set: { level1Score } }, // Force update level1Score
+      { new: true, runValidators: true } // Return updated document
+    );
+
+    res.status(200).json({
+      message: "Score updated successfully",
+      participant: updatedUser,
+    });
+  } catch (error) {
+    console.error("Error updating score:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+});
+
+app.post("/login", async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ message: "Email and password are required." });
+  }
+
+  try {
+    // Find user by email
+    const user = await Participant.findOne({ email });
+
+    if (!user) {
+      return res.status(401).json({ message: "Invalid email or password" });
+    }
+
+    // Compare password (assuming passwords are hashed)
+    if (password.trim() === user.password.trim()) {
+      res.status(200).json({ 
+        message: "Login successful", 
+        email: user.email 
+      });
+    } else {
+      return res.status(400).json({ message: "Check your password" });
+    }
+    
+       
+
+    // res.status(200).json({ message: "Login successful", token });
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
 });
 
 // Cleanup: flush compilex temporary files on process exit

@@ -3,8 +3,12 @@ const bcrypt = require('bcrypt'); // or use bcryptjs if needed
 
 const participantSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true, index: true },
-  password: { type: String, required: true }
+  password: { type: String, required: true },
+  level1Score: { type: Number, default: 0 } ,
+  level2Score: { type: Number, default: 0 },
+  finalScore: { type: Number, default: 0 }, // New field for Level 1 score
 });
+
 
 // Pre-save hook to hash the password before saving
 participantSchema.pre('save', async function(next) {
