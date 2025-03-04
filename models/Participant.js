@@ -4,9 +4,13 @@ const bcrypt = require('bcrypt'); // or use bcryptjs if needed
 const participantSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true, index: true },
   password: { type: String, required: true },
+  submittedcode: { type: String, default:null},
   level1Score: { type: Number, default: 0 } ,
   level2Score: { type: Number, default: 0 },
-  finalScore: { type: Number, default: 0 }, // New field for Level 1 score
+  level3Score: { type: Number, default: 0 },
+  finalScore: { type: Number, default: 0 },
+  passed: { type: Number, default: 0 },
+  failed: { type: Number, default: 0 }, // New field for Level 1 score
 });
 
 

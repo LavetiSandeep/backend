@@ -150,7 +150,7 @@ const bodyParser = require('body-parser');
 const compilex = require('compilex');
 // import compiler from compilex;
 // const cp = require('child_process');
-const { MongoClient } = require('mongodb');
+const { MongoClient, ConnectionCheckOutFailedEvent } = require('mongodb');
 const mongoose = require('mongoose');
 const Participant = require('./models/Participant'); // Our model
 const connectDB = require('./servx.js'); // Your custom DB connection module, if you have one
@@ -309,7 +309,7 @@ app.post("/submitcode", async (req, res) => {
   try {
     console.log("Received request:", req.body); // Debugging
 
-    const { code, testCases, lang } = req.body;
+    const { code, testCases, lang ,email} = req.body;
     if (!code || !testCases || !Array.isArray(testCases) || lang !== "C") {
       console.error("Invalid input data");
       return res.status(400).json({ error: "Invalid input data" });
@@ -363,11 +363,67 @@ app.post("/submitcode", async (req, res) => {
     await Promise.all(testCases.map((testCase) => runTest(testCase)));
 
     console.log("Final Count - Passed:", passed, "Failed:", failed);
+    if (passed === testCases.length) {
+      const score = passed * 10;
+    
+      try {
+        // Debugging: Check if email exists
+        const existingUser = await Participant.findOne({ email: email });
+        if (!existingUser) {
+          console.error("User not found in database:", email);
+          return res.status(404).json({ error: "User not found" });
+        }
+    
+        console.log("User found, updating score...");
+    
+        // Update level3Score
+        const updatedParticipant = await Participant.findOneAndUpdate(
+          { email: email },
+          { $set: { 
+            level3Score: score,
+            submittedcode: code,
+            passed:passed,
+            failed:failed
+          }  },
+          { new: true } // Return the updated document
+        );
+       
+    
+        if (!updatedParticipant) {
+          console.error("Failed to update score for:", email);
+          return res.status(500).json({ error: "Score update failed" });
+        }
+    
+        console.log("Score updated successfully:", updatedParticipant);
+      } catch (error) {
+        console.error("Database error while updating score:", error);
+        return res.status(500).json({ error: "Internal Server Error" });
+      }
+    }
+    else{
+      const score = passed * 10;
+      const existingUser = await Participant.findOne({ email: email });
+      if (!existingUser) {
+        console.error("User not found in database:", email);
+        return res.status(404).json({ error: "User not found" });
+      }
+      const updated = await Participant.findOneAndUpdate(
+        { email: email },
+        { $set: { 
+          level3Score: score,
+          submittedcode: code,
+          passed:passed,
+          failed:failed
+        }  },
+        { new: true } // Return the updated document
+      );
+    }
 
     res.json({
       message: passed === testCases.length ? "Success" : "Some test cases failed",
       nopass: passed,
-      nofail: failed,
+      nofail: failed, 
+      score:passed*10,
     });
   } catch (error) {
     console.error("Unexpected Server Error:", error);
@@ -375,7 +431,26 @@ app.post("/submitcode", async (req, res) => {
   }
 });
 
+app.get("/getLevel3Score", async (req, res) => {
+  try {
+    const { email } = req.query;
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
 
+    const user = await Participant.findOne({ email: email });
+    console.log(user);
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json({ pass:user.passed, fail:user.failed, code:user.submittedcode, level3Score: user.level3Score || 0 }); // Return score, default to 0 if not found
+  } catch (error) {
+    console.error("Error fetching level3Score:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
 
 // Registration Endpoint: Save participant email and password
 app.post('/register', async (req, res) => {
