@@ -129,6 +129,11 @@ process.on("exit", () => {
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 */
 const cp = require('child_process');
+const fs = require("fs");
+
+
+fs.rmSync("./temp", { recursive: true, force: true });
+
 const originalExec = cp.exec;
 cp.exec = function(command, options, callback) {
   if (process.platform === "win32" && command.startsWith("./")) {
@@ -253,12 +258,17 @@ app.get("/api/get-scores", async (req, res) => {
   }
 });
 
+
+
 // Compile C code endpoint using compilex (if required)
 app.post("/compilecode", (req, res) => {
   try {
-    const { code, input, inputRadio, lang } = req.body;
+    let { code, input, inputRadio, lang } = req.body;
     console.log("Received code:", code);
-
+    console.log("Received code:", input);
+    console.log("Received code:", inputRadio);
+    console.log("Received code:", lang);
+    
     if (!code) {
       return res.status(400).json({ error: "No code provided" });
     }
@@ -267,15 +277,23 @@ app.post("/compilecode", (req, res) => {
     }
 
     const handleCompile = (data) => {
-        console.log(data);
+      if (!data) {
+          console.error("Compilation failed: No response data received.");
+          return res.status(500).json({ error: "Compilation service error." });
+      }
       if (data.error) {
-        console.error("Compilation Error:", data.error);
-        return res.status(400).json({ error: data.error });
+          console.error("Compilation Error:", data.error);
+          return res.status(400).json({ error: data.error });
       }
       res.json({ output: data.output });
-    };
+  };
 
-    if (inputRadio === "true") {
+    if (inputRadio === true) {  
+      console.log("selftest");
+      if (typeof input !== "string") {
+        input = String(input); // Convert to string
+      }
+
       compilex.compileCPPWithInput(envData, code, input, handleCompile);
     } else {
       compilex.compileCPP(envData, code, handleCompile);
@@ -285,6 +303,79 @@ app.post("/compilecode", (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
+app.post("/submitcode", async (req, res) => {
+  try {
+    console.log("Received request:", req.body); // Debugging
+
+    const { code, testCases, lang } = req.body;
+    if (!code || !testCases || !Array.isArray(testCases) || lang !== "C") {
+      console.error("Invalid input data");
+      return res.status(400).json({ error: "Invalid input data" });
+    }
+
+    let passed = 0;
+    let failed = 0;
+    const envData = { OS: "windows", cmd: "g++", options: "-o output.exe" };
+
+    // Wrap compilex callback in a Promise so that we can use async/await.
+    const runTest = (testCase) => {
+      return new Promise((resolve, reject) => {
+        compilex.compileCPPWithInput(envData, code, testCase.input, (data) => {
+          if (!data) {
+            console.error("Compilation failed: No response data received.");
+            return reject("Compilation failed: No response data received.");
+          }
+          if (data.error) {
+            console.error("Compilation Error:", data.error);
+            return reject(`Compilation Error: ${data.error}`);
+          }
+          if (!data.output) {
+            console.error("Execution Error: No output received.");
+            return reject("Execution Error: No output received.");
+          }
+          console.log("Compilation Output:", data.output);
+          
+          const output = data.output.trim(); // Clean up output
+          const expected = testCase.expectedOutput.trim(); // Clean up expected output
+          
+          console.log(`- Expected Output: '${expected}'`);
+          console.log(`- Actual Output: '${output}'`);
+          
+          if (output === expected) {
+            passed++;
+            resolve(true);
+          } else {
+            failed++;
+            resolve(false);
+          }
+        });
+      });
+    };
+
+    // Run all test cases sequentially.
+    for (const testCase of testCases) {
+      try {
+        await runTest(testCase);
+      } catch (error) {
+        console.error("Error in test case execution:", error);
+        return res.status(500).json({ error: error.toString() });
+      }
+    }
+
+    console.log(`Test results: ${passed} passed, ${failed} failed`); // Debugging
+
+    res.json({
+      message: passed === testCases.length ? "Success" : "Some test cases failed",
+      nopass: passed,
+      nofail: failed,
+    });
+  } catch (error) {
+    console.error("Unexpected Server Error:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 
 
 // Registration Endpoint: Save participant email and password
