@@ -261,7 +261,8 @@ app.get("/api/get-scores", async (req, res) => {
 
 
 // Compile C code endpoint using compilex (if required)
-app.post("/compilecode", (req, res) => {
+app.post("/compilecode", (
+  req, res) => {
   try {
     let { code, input, inputRadio, lang } = req.body;
     console.log("Received code:", code);
@@ -316,9 +317,9 @@ app.post("/submitcode", async (req, res) => {
 
     let passed = 0;
     let failed = 0;
+
     const envData = { OS: "windows", cmd: "g++", options: "-o output.exe" };
 
-    // Wrap compilex callback in a Promise so that we can use async/await.
     const runTest = (testCase) => {
       return new Promise((resolve, reject) => {
         compilex.compileCPPWithInput(envData, code, testCase.input, (data) => {
@@ -334,36 +335,34 @@ app.post("/submitcode", async (req, res) => {
             console.error("Execution Error: No output received.");
             return reject("Execution Error: No output received.");
           }
-          console.log("Compilation Output:", data.output);
-          
-          const output = data.output.trim(); // Clean up output
-          const expected = testCase.expectedOutput.trim(); // Clean up expected output
-          
-          console.log(`- Expected Output: '${expected}'`);
-          console.log(`- Actual Output: '${output}'`);
-          
-          if (output === expected) {
-            passed++;
-            resolve(true);
-          } else {
-            failed++;
-            resolve(false);
+
+          try {
+            const output = data.output.trim();
+            const expected = testCase.expectedOutput.trim();
+            console.log("Output:", output);
+            console.log("Expected:", expected);
+
+            if (output === expected) {
+              passed++;
+              console.log("Pass:", passed);
+            } else {
+              failed++;
+              console.log("Fail:", failed);
+            }
+            console.log("Trimmed Output:", output);
+            resolve();
+          } catch (err) {
+            console.error("Error processing output:", err.message);
+            reject(err);
           }
         });
       });
     };
 
-    // Run all test cases sequentially.
-    for (const testCase of testCases) {
-      try {
-        await runTest(testCase);
-      } catch (error) {
-        console.error("Error in test case execution:", error);
-        return res.status(500).json({ error: error.toString() });
-      }
-    }
+    // Run all test cases concurrently and wait for all to complete
+    await Promise.all(testCases.map((testCase) => runTest(testCase)));
 
-    console.log(`Test results: ${passed} passed, ${failed} failed`); // Debugging
+    console.log("Final Count - Passed:", passed, "Failed:", failed);
 
     res.json({
       message: passed === testCases.length ? "Success" : "Some test cases failed",
