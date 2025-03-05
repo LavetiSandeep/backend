@@ -212,9 +212,14 @@ app.post("/api/update-level2score", async (req, res) => {
   }
 
   try {
+
+    const currentTime = new Date().toTimeString().split(" ")[0];
     const updatedParticipant = await Participant.findOneAndUpdate(
       { email },
-      { $set: { level2Score } },
+      {  $set: { 
+        level2Score, 
+        level2submissiontime: currentTime // Store only the time
+      }  },
       { new: true, runValidators: true }
     );
 
@@ -231,6 +236,32 @@ app.post("/api/update-level2score", async (req, res) => {
     res.status(500).json({ message: "Server error", error });
   }
 });
+
+
+app.post("/updateCode", async (req, res) => {
+  const { email, submittedCode } = req.body;
+
+  if (!email || !submittedCode) {
+    return res.status(400).json({ message: "Email and code are required." });
+  }
+
+  try {
+    const updatedParticipant = await Participant.findOneAndUpdate(
+      { email },
+      { $set: { submittedcode: submittedCode} },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedParticipant) {
+      return res.status(404).json({ message: "Participant not found." });
+    }
+    console.log("Myrecord",updatedParticipant);
+    res.json({ message: "Code updated successfully", updatedParticipant });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+});
+
 app.get("/api/get-scores", async (req, res) => {
   const { email } = req.query; // email passed as a query parameter
   
@@ -304,6 +335,25 @@ app.post("/compilecode", (
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+app.get("/leaderboard", async (req, res) => {
+  try {
+    const leaderboard = await Participant.find()
+      .sort([
+        ["level3Score", -1],            // Highest Level 3 score first
+        ["level3submissiontime", 1],    // If same Level 3 score, earliest submission wins
+        ["finalScore", -1],             // If no Level 3 score, use finalScore
+        ["level2submissiontime", 1],    // If same finalScore, earliest Level 2 submission wins
+        ["level1Score", -1],            // If no finalScore, use level1Score
+        ["level1submissiontime", 1]     // If same Level 1 score, earliest Level 1 submission wins
+      ])
+      .select("email level3Score level3submissiontime finalScore level2submissiontime level1Score level1submissiontime")
+      .limit(10); // Get top 10 participants
+
+    res.json(leaderboard);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+});
 
 app.post("/submitcode", async (req, res) => {
   try {
@@ -375,13 +425,14 @@ app.post("/submitcode", async (req, res) => {
         }
     
         console.log("User found, updating score...");
-    
+        const currentTime = new Date().toTimeString().split(" ")[0];
         // Update level3Score
         const updatedParticipant = await Participant.findOneAndUpdate(
           { email: email },
           { $set: { 
             level3Score: score,
             submittedcode: code,
+            level3submissiontime:currentTime,
             passed:passed,
             failed:failed
           }  },
@@ -494,11 +545,16 @@ app.post("/api/update-score", async (req, res) => {
   try {
     // const user = await Participant.findOne({ email });
 
+    const currentTime = new Date().toTimeString().split(" ")[0];
     const updatedUser = await Participant.findOneAndUpdate(
-      { email }, // Find participant by email
-      { $set: { level1Score } }, // Force update level1Score
-      { new: true, runValidators: true } // Return updated document
-    );
+    { email }, // Find participant by email
+      { 
+        $set: { 
+          level1Score, 
+          level1submissiontime: currentTime // Store current timestamp
+        } 
+      },
+      { new: true, runValidators: true }   );
 
     res.status(200).json({
       message: "Score updated successfully",

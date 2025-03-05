@@ -9,6 +9,9 @@ const participantSchema = new mongoose.Schema({
   level2Score: { type: Number, default: 0 },
   level3Score: { type: Number, default: 0 },
   finalScore: { type: Number, default: 0 },
+  level1submissiontime: { type: String, default:null},
+  level2submissiontime: { type: String, default:null},
+  level3submissiontime: { type: String, default:null},
   passed: { type: Number, default: 0 },
   failed: { type: Number, default: 0 }, // New field for Level 1 score
 });
