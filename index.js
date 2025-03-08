@@ -156,7 +156,7 @@ const Participant = require('./models/Participant'); // Our model
 const connectDB = require('./servx.js'); // Your custom DB connection module, if you have one
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT||5000;
 
 // Connect to the database using your custom connectDB function (if available)
 connectDB();
