@@ -197,7 +197,7 @@ compilex.init({ stats: true, tempDir: "temp", });
 // };
 
 // Environment data for Windows using gcc (for compilex)
-let envData = { OS: "windows", cmd: "g++" ,options: { timeout: 5000 }};
+let envData = { OS: "linux", cmd: "gcc" ,options: { timeout: 5000 }};
 
 app.post("/api/update-level2score", async (req, res) => {
   const { email, level2Score } = req.body;
