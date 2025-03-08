@@ -367,7 +367,7 @@ app.post("/submitcode", async (req, res) => {
     let passed = 0;
     let failed = 0;
 
-    const envData = { OS: "windows", cmd: "g++", options: "-o output.exe" };
+    const envData = { OS: "linux", cmd: "gcc", options: "-o output.exe" };
 
     const runTest = (testCase) => {
       return new Promise((resolve, reject) => {
