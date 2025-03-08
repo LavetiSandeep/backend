@@ -132,6 +132,7 @@ const cp = require('child_process');
 const fs = require("fs");
 
 
+
 fs.rmSync("./temp", { recursive: true, force: true });
 
 const originalExec = cp.exec;
@@ -148,6 +149,7 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const compilex = require('compilex');
+
 // import compiler from compilex;
 // const cp = require('child_process');
 const { MongoClient, ConnectionCheckOutFailedEvent } = require('mongodb');
@@ -171,15 +173,8 @@ MongoClient.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTo
     console.error("MongoDB connection error:", error);
   });
 
-// CORS configuration
-const corsOptions = {
-  origin: "http://localhost:5173", // Allow your frontend origin
-  methods: ["GET", "POST", "OPTIONS"],
-  allowedHeaders: ["Content-Type"],
-  credentials: true,
-};
 
-app.use(cors(corsOptions));
+app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
