@@ -559,6 +559,7 @@ app.post("/api/update-score", async (req, res) => {
       message: "Score updated successfully",
       participant: updatedUser,
     });
+
   } catch (error) {
     console.error("Error updating score:", error);
     res.status(500).json({ message: "Server error", error });
