@@ -165,15 +165,15 @@ connectDB();
 console.log("Environment variables:", process.env);
 
 // Optionally, verify connection using MongoClient
-MongoClient.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => {
-    console.log("MongoDB connected successfully via MongoClient");
-  })
-  .catch((error) => {
-    console.error("MongoDB connection error:", error);
-  });
+// MongoClient.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+//   .then(() => {
+//     console.log("MongoDB connected successfully via MongoClient");
+//   })
+//   .catch((error) => {
+//     console.error("MongoDB connection error:", error);
+//   });
 
-  app.use(bodyParser.json());
+  // app.use(bodyParser.json());
 // app.use(cors());
 app.use(cors({
   origin: ['https://algoascentsjk.vercel.app','http://localhost:5173', '*'], // specify your frontend's URL
