@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcrypt'); // or use bcryptjs if needed
 
 const participantSchema = new mongoose.Schema({
+  name: { type: String, required: true, trim: true },
   email: { type: String, required: true, unique: true, index: true },
   password: { type: String, required: true },
   submittedcode: { type: String, default:null},

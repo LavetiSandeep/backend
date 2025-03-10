@@ -260,6 +260,34 @@ app.post("/updateCode", async (req, res) => {
     res.status(500).json({ message: "Server error", error });
   }
 });
+app.post("/connect", async (req, res) => {
+  try {
+    const { emails, name } = req.body;
+    const email=emails[0];
+
+    if (!email || !name) {
+      return res.status(400).json({ error: "Email and Name are required" });
+    }
+
+    // Check if participant already exists
+    const existingParticipant = await Participant.findOne({ email });
+
+    if (existingParticipant) {
+      return res.status(400).json({ error: "Participant already exists" });
+    }
+
+    // Create a new participant
+    const newParticipant = new Participant({ email, name, points: 0 });
+
+    // Save to database
+    await newParticipant.save();
+
+    res.status(201).json({ message: "Participant added successfully", participant: newParticipant });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
 
 app.get("/api/get-scores", async (req, res) => {
   const { email } = req.query; // email passed as a query parameter
@@ -559,7 +587,7 @@ app.post("/api/update-score", async (req, res) => {
       message: "Score updated successfully",
       participant: updatedUser,
     });
-
+    
   } catch (error) {
     console.error("Error updating score:", error);
     res.status(500).json({ message: "Server error", error });
