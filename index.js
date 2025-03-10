@@ -214,7 +214,7 @@ app.post("/api/update-level2score", async (req, res) => {
 
     const currentTime = new Date().toTimeString().split(" ")[0];
     const updateUser = await Participant.findOne({ email } );
-    if (!updatedParticipant) {
+    if (!updateUser) {
       return res.status(404).json({ message: "Participant not found" });
     }
     updateUser.level2Score=level2Score;
@@ -223,7 +223,7 @@ app.post("/api/update-level2score", async (req, res) => {
 
     res.status(200).json({
       message: "Level 2 score updated successfully",
-      participant: updatedParticipant,
+      participant: updateUser,
     });
   } catch (error) {
     console.error("Error updating level2 score:", error);
