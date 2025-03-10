@@ -176,7 +176,7 @@ MongoClient.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTo
 
 // app.use(cors());
 app.use(cors({
-  origin: ['https://algoascentsjk.vercel.app','http://localhost:5173'], // specify your frontend's URL
+  origin: ['https://algoascentsjk.vercel.app','http://localhost:5173', '*'], // specify your frontend's URL
   credentials: true // allow credentials (cookies, auth headers)
 }));
 app.use(bodyParser.json());
