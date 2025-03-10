@@ -263,11 +263,15 @@ app.post("/updateCode", async (req, res) => {
 app.post("/connect", async (req, res) => {
   try {
     const { emails, name } = req.body;
+    console.log(emails)
+    console.log(name)
     const email=emails[0];
 
     if (!email || !name) {
       return res.status(400).json({ error: "Email and Name are required" });
     }
+    const userName = name.toLowerCase().replace(/ /g, "")
+    const password = `${userName}@algoascent`
 
     // Check if participant already exists
     const existingParticipant = await Participant.findOne({ email });
@@ -277,7 +281,7 @@ app.post("/connect", async (req, res) => {
     }
 
     // Create a new participant
-    const newParticipant = new Participant({ email, name, points: 0 });
+    const newParticipant = new Participant({ email, name, points: 0, password });
 
     // Save to database
     await newParticipant.save();
