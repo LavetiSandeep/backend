@@ -266,7 +266,8 @@ app.post("/connect", async (req, res) => {
       return res.status(400).json({ error: "Email and Name are required" });
     }
     const userName = name.toLowerCase().replace(/ /g, "")
-    const password = `${userName}@algoascent`
+    const password = userName+"@algoascent";
+    console.log(userName,password);
 
     // Check if participant already exists
     const existingParticipant = await Participant.findOne({ email });

@@ -18,21 +18,4 @@ const participantSchema = new mongoose.Schema({
 });
 
 
-// Pre-save hook to hash the password before saving
-participantSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
-  try {
-    const saltRounds = 10;
-    this.password = await bcrypt.hash(this.password, saltRounds);
-    next();
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Method to compare a candidate password with the stored hash
-participantSchema.methods.comparePassword = function(candidatePassword) {
-  return bcrypt.compare(candidatePassword, this.password);
-};
-
 module.exports = mongoose.model('Participant', participantSchema);
