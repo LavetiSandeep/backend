@@ -173,14 +173,14 @@ MongoClient.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTo
     console.error("MongoDB connection error:", error);
   });
 
-
+  app.use(bodyParser.json());
 // app.use(cors());
 app.use(cors({
   origin: ['https://algoascentsjk.vercel.app','http://localhost:5173', '*'], // specify your frontend's URL
   credentials: true // allow credentials (cookies, auth headers)
 }));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.json());
+app.use(express.urlencoded({extended:true}));
 
 // Initialize compilex (if needed for code compilation)
 compilex.init({ stats: true, tempDir: "temp", });
@@ -213,18 +213,13 @@ app.post("/api/update-level2score", async (req, res) => {
   try {
 
     const currentTime = new Date().toTimeString().split(" ")[0];
-    const updatedParticipant = await Participant.findOneAndUpdate(
-      { email },
-      {  $set: { 
-        level2Score, 
-        level2submissiontime: currentTime // Store only the time
-      }  },
-      { new: true, runValidators: true }
-    );
-
+    const updateUser = await Participant.findOne({ email } );
     if (!updatedParticipant) {
       return res.status(404).json({ message: "Participant not found" });
     }
+    updateUser.level2Score=level2Score;
+    updateUser.save();
+    
 
     res.status(200).json({
       message: "Level 2 score updated successfully",
@@ -293,8 +288,8 @@ app.post("/connect", async (req, res) => {
   }
 });
 
-app.get("/api/get-scores", async (req, res) => {
-  const { email } = req.query; // email passed as a query parameter
+app.post("/api/get-scores", async (req, res) => {
+  const { email } = req.body; // email passed as a query parameter
   
   if (!email) {
     return res.status(400).json({ message: "Email parameter is required" });
@@ -307,6 +302,9 @@ app.get("/api/get-scores", async (req, res) => {
     }
     participant.finalScore=participant.level1Score+ participant.level2Score;
     await participant.save();
+    console.log( participant.level1Score,
+      participant.level2Score,
+      participant.finalScore,)
 
 
     res.status(200).json({
@@ -577,19 +575,13 @@ app.post("/api/update-score", async (req, res) => {
     // const user = await Participant.findOne({ email });
 
     const currentTime = new Date().toTimeString().split(" ")[0];
-    const updatedUser = await Participant.findOneAndUpdate(
-    { email }, // Find participant by email
-      { 
-        $set: { 
-          level1Score, 
-          level1submissiontime: currentTime // Store current timestamp
-        } 
-      },
-      { new: true, runValidators: true }   );
+    const updateUser = await Participant.findOne({ email } );
+    updateUser.level1Score=level1Score;
+    await updateUser.save();
 
     res.status(200).json({
       message: "Score updated successfully",
-      participant: updatedUser,
+      participant: updateUser,
     });
     
   } catch (error) {
