@@ -197,7 +197,7 @@ compilex.init({ stats: true, tempDir: "temp", });
 // };
 
 // Environment data for Windows using gcc (for compilex)
-let envData = { OS: "linux", cmd: "gcc" ,options: { timeout: 5000 }};
+let envData = { OS: "windows", cmd: "g++" ,options: { timeout: 20000 }};
 
 app.post("/api/update-level2score", async (req, res) => {
   const { email, level2Score } = req.body;
@@ -322,8 +322,7 @@ app.post("/api/get-scores", async (req, res) => {
 
 
 // Compile C code endpoint using compilex (if required)
-app.post("/compilecode", (
-  req, res) => {
+app.post("/compilecode", (req, res) => {
   try {
     let { code, input, inputRadio, lang } = req.body;
     console.log("Received code:", code);
@@ -398,7 +397,7 @@ app.post("/submitcode", async (req, res) => {
     let passed = 0;
     let failed = 0;
 
-    const envData = { OS: "linux", cmd: "gcc", options: "-o output.exe" };
+    const envData = { OS: "windows", cmd: "g++", options: "-o output.exe" };
 
     const runTest = (testCase) => {
       return new Promise((resolve, reject) => {
@@ -475,6 +474,10 @@ app.post("/submitcode", async (req, res) => {
           return res.status(500).json({ error: "Score update failed" });
         }
     
+        return res.status(200).json({ 
+          message: "Success", 
+          participant: updatedParticipant 
+        });
         console.log("Score updated successfully:", updatedParticipant);
       } catch (error) {
         console.error("Database error while updating score:", error);
